@@ -17,6 +17,8 @@ public class OrdersController : Controller
         _db = db;
     }
 
+    //-------------------------------------------------
+
     [HttpGet]
     public async Task<ActionResult<List<OrderWithStatus>>> GetOrders()
     {
@@ -28,6 +30,9 @@ public class OrdersController : Controller
 
         return orders.Select(o => OrderWithStatus.FromOrder(o)).ToList();
     }
+
+
+    //-------------------------------------------------
 
     [HttpPost]
     public async Task<ActionResult<int>> PlaceOrder(Order order)
@@ -48,4 +53,26 @@ public class OrdersController : Controller
 
         return order.OrderId;
     }
+
+
+    //------------------------------------------------- Get Orders orders with a status
+
+    [HttpGet("{orderId}")]
+    public async Task<ActionResult<OrderWithStatus>> GetOrderWithStatus(int orderId)
+    {
+        var order = await _db.Orders
+            .Where(o => o.OrderId == orderId)
+            .Include(o => o.Pizzas).ThenInclude(p => p.Special)
+            .Include(o => o.Pizzas).ThenInclude(p => p.Toppings).ThenInclude(t => t.Topping)
+            .SingleOrDefaultAsync();
+
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        return OrderWithStatus.FromOrder(order);
+    }
+
+
 }
